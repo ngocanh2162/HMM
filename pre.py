@@ -1,5 +1,3 @@
-import os
-import numpy as np
 import re
 
 class Prep(object): 
@@ -25,6 +23,7 @@ class Prep(object):
             line = re.sub(r'[0-9]+', '', line.lower())
             temp =  line.lower().split()
             X += temp
+        print('syllables: ', len(X))
         return X
 
     def str2words(self, text):
@@ -50,15 +49,18 @@ class Prep(object):
                 if word not in syllables: #dau cau, so, tu nuoc ngoai, tu dung
                     hiddenState += 'O'
                 else:
-                    hiddenState += ' '
+                    if len(hiddenState) > 0 and hiddenState[-1] == 'O':
+                        hiddenState += 'B'
+                    else:
+                        hiddenState += ' '
             hiddenStates.append(hiddenState)
         return (hiddenStates, word_count)
 
     def BIOconf(self, X, word_count, test_wordcount, hidden_states):
         B = {}
         words = list(set(word_count.keys())|set(test_wordcount.keys()))
-        M = len(words)
-        for i in range(len(self.states)):
+        M = len(self.states)
+        for i in range(M):
             B[i] = {}
             for word in words:
                 B[i][word] = 1.0/M
