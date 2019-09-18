@@ -17,19 +17,18 @@ X_train = pro.str2words(X)
 observations_test = pro.str2words(test)
 _, test_wordcount = pro.wordCount(test, syllables_path)
 
-# fix cứng A[state_from=O][state_to=B =1, A[state_from=O][state_to=I|O] = 0
+# fix cứng 
+# A[state_from=O][state_to=B] =1, A[state_from=O][state_to=I|O] = 0
 # B[observation = O] thì B[state=O]=1, B[state=B|I]=0
 # phi(I) = 0
 
 B = pro.BIOconf(X_train, word_count, test_wordcount, hidden_states)
 phi = [0.9, 0, 0.1]
-A = [[0.45, 0.35, 0.2], [0.6, 0.2, 0.2], [1, 0, 0]] 
-model = Model(S, observation, phi, A, B)
+A = [[0.45, 0.35, 0.2], [0.6, 0.2, 0.2], [0.7, 0, 0.3]] 
 o_hiddenstate = []
-Z = []
-for i in range(len(X_train)):
-    Z += X_train[i]
-phi, A, B = model.learningPhase(Z, 3, A, B)
+model = Model(S, observation, phi, A, B)
+
+phi, A, B = model.learningPhase(X_train, 3, A, B)
 for obser in observations_test:
     length = len(obser)
     i, sub_obser, state = 0, [], []

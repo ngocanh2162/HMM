@@ -8,39 +8,53 @@ class Model(object):
         self.A = A
         self.B = B
 
-    def forward(self, observations):
-        o_len = len(observations)
-        alpha = [[] for i in range(o_len)]
-        alpha[0] = {}
-        for i in range(len(self.states)):
-            alpha[0][i] = self.B[i][observations[0]]*self.phi[i]
-        for t in range(1, o_len):
-            alpha[t] = {} 
-            for state_to in range(len(self.states)):
-                prob = 0
-                for state_from in range(len(self.states)):
-                    prob += alpha[t-1][state_from]*self.A[state_from][state_to]
-                alpha[t][state_to]=self.B[state_to][observations[t]]*prob
-        return alpha
-
-    def backward(self, observations):
-        o_len = len(observations)
-        beta = [[] for i in range(o_len)]
-        beta[o_len-1] = {}
-        for i in range(len(self.states)):
-            beta[o_len-1][i] = 1
-        i = o_len - 1
-        while i > 0:
-            beta[i-1] = {}
-            for state_from in range(len(self.states)):
-                prob = 0
+    def forward(self, observations_list):
+        alpha_matrix = []
+        for s in range(len(observations_list)):
+            observations = observations_list[s]
+            alpha = [[] for i in range(len(observations))]
+            alpha[0] = {}
+            for i in range(len(self.states)):
+                alpha[0][i] = self.B[i][observations[0]]*self.phi[i]
+            for t in range(1, len(observations)):
+                alpha[t] = {} 
                 for state_to in range(len(self.states)):
-                    prob += self.A[state_from][state_to] * self.B[state_to][observations[i]]*beta[i][state_to]
-                beta[i-1][state_from] = prob
-            i += -1
-        return beta
+                    prob = 0
+                    for state_from in range(len(self.states)):
+                        prob += alpha[t-1][state_from]*self.A[state_from][state_to]
+                    alpha[t][state_to] = self.B[state_to][observations[t]]*prob
+            alpha_matrix.append(alpha)
+        print('alpha ', len(alpha_matrix))
+        return alpha_matrix
+
+    def backward(self, observations_list):
+        beta_matrix = []
+        for s in range(len(observations_list)):
+            observations = observations_list[s]
+            o_len = len(observations)
+            beta = [[] for i in range(o_len)]
+            beta[o_len-1] = {}
+            for i in range(len(self.states)):
+                beta[o_len-1][i] = 1
+            i = o_len - 1
+            while i > 0:
+                beta[i-1] = {}
+                for state_from in range(len(self.states)):
+                    prob = 0
+                    for state_to in range(len(self.states)):
+                        prob += self.A[state_from][state_to] * self.B[state_to][observations[i]]*beta[i][state_to]
+                    beta[i-1][state_from] = prob
+                i += -1
+            beta_matrix.append(beta)
+        print('beta ', len(beta_matrix))
+        return beta_matrix
  
-    def cal_gamma(self, observations, alpha, beta):
+    def cal_gamma(self, observations_list, alpha_matrix, beta_matrix):
+        observations, alpha, beta = [], [], []
+        for i in range(len(observations_list)):
+            observations += observations_list[i]
+            alpha += alpha_matrix[i]
+            beta += beta_matrix[i]
         T = len(observations)
         gamma = [[] for i in range(T)]
         for t in range(T):
@@ -55,10 +69,15 @@ class Model(object):
                     continue
                 else:
                     gamma[t][state] /= sum_prob
-        print(gamma[0:10])
+        print('gamma ', len(gamma))
         return gamma
             
-    def cal_epsi(self, observations, alpha, beta, A, B):
+    def cal_epsi(self, observations_list, alpha_matrix, beta_matrix, A, B):
+        observations, alpha, beta = [], [], []
+        for i in range(len(observations_list)):
+            observations += observations_list[i]
+            alpha += alpha_matrix[i]
+            beta += beta_matrix[i]
         T = len(observations)
         epsi = [[] for i in range(T-1)]
         for t in range(T-1):
@@ -76,9 +95,13 @@ class Model(object):
                         continue
                     else:
                         epsi[t][i][j] /= sum_prob
+        print('epsi ', len(epsi))
         return epsi
 
-    def estimate(self, gamma, epsi, observations):
+    def estimate(self, gamma, epsi, observations_list):
+        observations = []
+        for i in range(len(observations_list)):
+            observations += observations_list[i]
         T = len(observations)
         phi = gamma[0]
         A, B = {},{}
@@ -91,23 +114,26 @@ class Model(object):
                 for t in range(T-1):
                     epsi_t += epsi[t][i][j]
                     gamma_t += gamma[t][i]
-                    print(gamma[t][i])
-                # try:
                 A[i][j] = float(epsi_t)/float(gamma_t)
-                # except ZeroDivisionError:
-                #   print (gamma_t)
-                #   print (epsi_t)
-        for i in self.states:
-            for j in range(T):
+                print('A[',i,'][',j,']: ', A[i][j])
+        for i in range(len(self.states)):
+            for j in self.observation:
                 gamma_t, gamma_tt = 0, 0
                 for t in range(T):
                     if observations[t] == j:
                         gamma_tt += gamma[t][i]
-                    gamma_t = gamma[t][i]
-                B[i][j] = float(gamma_tt)/float(gamma_t)
+                    gamma_t += gamma[t][i]
+                if gamma_t == 0:
+                    B[i][j] = 0
+                else:
+                    B[i][j] = float(gamma_tt)/float(gamma_t)
+        print('done B')
         return (phi, A, B)
         
-    def cal_PMI(self, observations, word_count, i, j):
+    def cal_PMI(self, observations_list, word_count, i, j):
+        observations = []
+        for i in range(len(observations_list)):
+            observations += observations_list[i]
         o_len = len(observations)
         sum = 0
         for k in range(len(word_count)):
@@ -160,7 +186,7 @@ class Model(object):
 
     def learningPhase(self, observations, iter_num, A, B):
         for i in range(iter_num):
-            print(i)
+            print('epoch ', i)
             alpha = self.forward(observations)
             beta = self.backward(observations)
             gamma = self.cal_gamma(observations, alpha, beta)
@@ -168,4 +194,4 @@ class Model(object):
             phi, A, B = self.estimate(gamma, epsi, observations)
         phi = self.phi
         A = self.A
-        B = self.B  
+        B = self.B 

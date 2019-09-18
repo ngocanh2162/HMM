@@ -9,9 +9,12 @@ class Prep(object):
         X = []
         f =  open(self.file_path, 'r', encoding="utf8")
         for line in f:
-                x = ''.join(line.lower())
-                x = x.replace("_", " ")
-                X.append(x)
+            x = ''.join(line.lower())
+            x = x.replace("_", " ")
+            x = x.replace(". ", ".. ")
+            sentences = x.split(". ")
+            for sen in sentences: 
+                X.append(sen)
         return X
 
     def getSyllables(self, path):
@@ -23,7 +26,6 @@ class Prep(object):
             line = re.sub(r'[0-9]+', '', line.lower())
             temp =  line.lower().split()
             X += temp
-        print('syllables: ', len(X))
         return X
 
     def str2words(self, text):

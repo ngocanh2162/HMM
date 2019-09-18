@@ -13,7 +13,9 @@
 #         return X
 
 # print(getSyllables(syllables))
-statess = [0, 1]
+
+
+statess = [0, 1, 2]
 end_probabilities = list(map(lambda state: 1, statess))
 for index, state in enumerate(statess):
-    print(end_probabilities([index]))
+    print(end_probabilities[index])
