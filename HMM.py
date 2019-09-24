@@ -117,29 +117,40 @@ class Model(object):
                 A[i][j] = float(epsi_t)/float(gamma_t)
                 print('A[',i,'][',j,']: ', A[i][j])
         for i in range(len(self.states)):
-            for j in self.observation:
-                gamma_t, gamma_tt = 0, 0
-                for t in range(T):
-                    if observations[t] == j:
-                        gamma_tt += gamma[t][i]
-                    gamma_t += gamma[t][i]
-                if gamma_t == 0:
-                    B[i][j] = 0
-                else:
-                    B[i][j] = float(gamma_tt)/float(gamma_t)
-        print('done B')
+            gamma_t = 0
+            for t in range(T):
+                gamma_t += gamma[t][i]
+            for o in self.observation:
+                #print(o)
+                #if B[i][o] == 0:
+                #  continue
+                #elif B[i][o] == 1:
+                #  continue
+                #else: 
+                    # if gamma_t == 0:
+                    #     B[i][o] = 0
+                    # else:
+                        gamma_tt = 0
+                        for t in range(T):
+                            if observations[t] == o:
+                                gamma_tt += gamma[t][i]
+                        B[i][o] = float(gamma_tt)/float(gamma_t)
+        print('done B', len(B[0]))
         return (phi, A, B)
         
-    def cal_PMI(self, observations_list, word_count, i, j):
-        observations = []
-        for i in range(len(observations_list)):
-            observations += observations_list[i]
+    def cal_PMI(self, observations, word_count, i, j):
         o_len = len(observations)
         sum = 0
-        for k in range(len(word_count)):
-            sum += word_count[k]
-        temp1 = word_count(observations[i])
-        temp2 = word_count(observations[j])
+        for k in word_count.values():
+            sum += k
+        if observations[i] in word_count:
+            temp1 = word_count[observations[i]]
+        else: 
+            temp1 = 0
+        if observations[j] in word_count:
+            temp2 = word_count[observations[j]]
+        else: 
+            temp2 = 0
         temp3 = 0
         for k in range(o_len):
             if observations[k] == observations[i] and observations[k+1] == observations[j]:
@@ -159,7 +170,10 @@ class Model(object):
             for state_to in range(len(self.states)):
                 temp_max = 0 #???
                 for state_from in range(len(self.states)):
-                    temp = mu[i-1][state_from]*self.A[state_from][state_to]*self.B[state_to,observations[i]]
+                    if observations[i] not in word_count: 
+                        temp = 0
+                    else:
+                        temp = mu[i-1][state_from]*self.A[state_from][state_to]*self.B[state_to][observations[i]]
                     if temp > temp_max:
                         temp_max = temp
                 if state_to == 2:
@@ -171,7 +185,7 @@ class Model(object):
         o_len = len(observations)
         mu = self.viterbi(observations, word_count)
         sequence = mu[o_len-1]
-        state = sorted(sequence, key = sequence.get, reversed = True)[0]
+        state = sorted(sequence, key = sequence.get, reverse = True)[0]
         theta = [0 for i in range(o_len)]
         i = o_len - 1
         theta[i] = state
@@ -179,7 +193,7 @@ class Model(object):
             prob = {}
             for state_from in range(len(self.states)):
                 prob[state_from] = mu[i-1][state_from]*self.A[state_from][state]
-            state = sorted(prob, key = prob.get, reversed = True)[0]
+            state = sorted(prob, key = prob.get, reverse = True)[0]
             i -= 1
             theta[i] = state
         return theta
@@ -194,4 +208,4 @@ class Model(object):
             phi, A, B = self.estimate(gamma, epsi, observations)
         phi = self.phi
         A = self.A
-        B = self.B 
+        B = self.B  

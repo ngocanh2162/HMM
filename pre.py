@@ -6,16 +6,29 @@ class Prep(object):
         self.states = states
         
     def getData(self):
-        X = []
+        X, Y = [], []
         f =  open(self.file_path, 'r', encoding="utf8")
+        line_num = 0
         for line in f:
+          line_num += 1
+          if (line_num % 500) < 200: 
             x = ''.join(line.lower())
             x = x.replace("_", " ")
             x = x.replace(". ", ".. ")
             sentences = x.split(". ")
             for sen in sentences: 
                 X.append(sen)
-        return X
+          elif 200 <= (line_num % 500) < 300: 
+            y = ''.join(line.lower())
+            y = y.replace("_", " ")
+            y = y.replace(". ", ".. ")
+            sentences = y.split(". ")
+            for sen in sentences: 
+                Y.append(sen)
+          else:
+            continue
+        print(len(X), len(Y))
+        return X, Y
 
     def getSyllables(self, path):
         X = []
@@ -93,16 +106,17 @@ class Prep(object):
             temp = []
             j = 0
             while j < length:
-                if o_hiddenstate[i][j] == 'O':
+                if o_hiddenstate[i][j] == '2':
                     temp.append(test[i][j])
+                    j += 1
                 else:
                     s = test[i][j]
                     j += 1
-                    while o_hiddenstate[i][j] == 'B':
-                        s += test[i][j]
-                        k += 1 
-                    s += test[i][j]
-                    temp.append(s)
-                k += 1
+                    if j < length:
+                        while o_hiddenstate[i][j] == '1' and j < length:
+                            s += '_'
+                            s += test[i][j]
+                            j += 1
+                        temp.append(s)
             sequence.append(' '.join(temp))
         return sequence
