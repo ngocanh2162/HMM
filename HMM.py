@@ -206,6 +206,6 @@ class Model(object):
             gamma = self.cal_gamma(observations, alpha, beta)
             epsi = self.cal_epsi(observations, alpha, beta, A, B)
             phi, A, B = self.estimate(gamma, epsi, observations)
-        phi = self.phi
-        A = self.A
-        B = self.B  
+            phi = self.phi
+            A = self.A
+            B = self.B  

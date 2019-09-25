@@ -106,17 +106,21 @@ class Prep(object):
             temp = []
             j = 0
             while j < length:
-                if o_hiddenstate[i][j] == '2':
+                if o_hiddenstate[i][j] == 2:
                     temp.append(test[i][j])
                     j += 1
                 else:
-                    s = test[i][j]
+                    if o_hiddenstate[i][j] == 0:
+                        s = ''
+                    else:
+                        s = '_'
+                    s += test[i][j]
                     j += 1
                     if j < length:
-                        while o_hiddenstate[i][j] == '1' and j < length:
+                        while o_hiddenstate[i][j] == 1:
                             s += '_'
                             s += test[i][j]
                             j += 1
-                        temp.append(s)
+                    temp.append(s)
             sequence.append(' '.join(temp))
         return sequence
